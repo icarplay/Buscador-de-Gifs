@@ -12,17 +12,13 @@ class _HomePageState extends State<HomePage> {
   String _search;
   int _offset = 0;
 
-  String urlTrending = "https://api.giphy.com/v1/gifs/trending?api_key=Op6EDzD1BHzYO8I9DwLEuVZE8Q7TbOBr&limit=20&rating=G";
-
-  String urlSearch = "https://api.giphy.com/v1/gifs/search?api_key=Op6EDzD1BHzYO8I9DwLEuVZE8Q7TbOBr&q=$_search&limit=20&offset=$_offset&rating=G&lang=en";
-
   Future<Map> _getSearchGif() async {
     http.Response response;
 
     if (_search == null){
-      response = await http.get(urlTrending);
+      response = await http.get("https://api.giphy.com/v1/gifs/trending?api_key=Op6EDzD1BHzYO8I9DwLEuVZE8Q7TbOBr&limit=20&rating=G");
     } else {
-      response = await http.get(urlSearch);
+      response = await http.get("https://api.giphy.com/v1/gifs/search?api_key=Op6EDzD1BHzYO8I9DwLEuVZE8Q7TbOBr&q=$_search&limit=20&offset=$_offset&rating=G&lang=en");
     }
 
     return json.decode(response.body);
@@ -52,9 +48,53 @@ class _HomePageState extends State<HomePage> {
               textAlign: TextAlign.center,
             ),
           ),
-          
+          Expanded(
+            child: FutureBuilder(
+              future: _getSearchGif(),
+              builder: (context, snapshot) {
+                switch (snapshot.connectionState) {
+                  case ConnectionState.waiting:
+                  case ConnectionState.none:
+                    return Container(
+                      alignment: Alignment.center,
+                      width: 200.0,
+                      height: 200.0,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        strokeWidth: 5.0,
+                      ),
+                    );
+                  default:
+                    if (snapshot.hasError) return Container();
+                    else return _createGifTable(context, snapshot);
+                }
+              },
+            ),
+          )
         ],
       ),
     );
   }
+
+  Widget _createGifTable(BuildContext context, AsyncSnapshot snapshot) {
+    return GridView.builder(
+      padding: EdgeInsets.all(10.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0
+      ),
+      itemCount: snapshot.data['data'].length,
+      itemBuilder: (context, index) {
+        return GestureDetector(
+          child: Image.network(
+            snapshot.data['data'][index]['images']['fixed_height']['url'],
+            height: 300.0,
+            fit: BoxFit.cover,
+          ),
+        );
+      },
+    );
+  }
+
 }
